@@ -1,0 +1,12 @@
+extends layout
+
+block header_scripts
+  script(src="/javascripts/socket.io-stream.js")
+  script(src="/javascripts/init.js")
+  script(src="/javascripts/audio.js")
+  script(src="/javascripts/recorder.js")
+
+block content
+  div()
+    button(id="create_audio", onclick="createAudioRecorderElement()") Create Recording
+    audio(id="audio_test", autoplay="autoplay")
