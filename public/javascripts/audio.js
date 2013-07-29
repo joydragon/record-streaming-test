@@ -3,6 +3,15 @@ var aCtx;
 var processor;
 var microphone;
 var test_stream = ss.createStream();
+var array_stream;
+
+/*
+ss(io).emit("shout", test_stream);
+var a = new Float32Array(3);
+a[0] = 0.12313123; a[1] = 0.81208; a[2] = 0.512412;
+var b = new ss.Array2ByteStream(a)
+b.pipe(test_stream);
+*/
 
 jQuery(document).ready(function(){
   //var audio = document.querySelector('audio#audio_test');
@@ -46,6 +55,9 @@ jQuery(document).ready(function(){
 
 function initRecorder()
 {
+  // Pass the stream to the server to store as part of the natural thing :P
+  ss(io).emit("shout", test_stream);
+  
   recorder = new Worker("/javascripts/recorderWorker.js");
   recorder.postMessage({
     init: "init",
@@ -56,11 +68,16 @@ function initRecorder()
   recorder.onmessage = function(e){
     var blob = e.data;
     
+    /*
     ss(io).emit("shout", test_stream, {size: blob.size}, function(){
       console.log("Done?");
     });
     ss.createBlobReadStream(blob).pipe(test_stream);
-
+    */
+    
+    
+    
+    //test_stream.end();
     /*
     var p = document.createElement("p");
     jQuery(p).text(window.URL.createObjectURL(blob));
@@ -93,6 +110,16 @@ function processAudio(event)
   /* Transmit this to the server, with no treatment, have to test with encoding and/or compression */
   if(io !== undefined)
   {
+    if(array_stream === undefined)
+    {
+	array_stream = ss.Array2ByteStream(event.inputBuffer.getChannelData(0));
+	array_stream.on("error", function(error){console.log("There was an error");console.log(error)});
+	array_stream.pipe(test_stream);
+    }
+    else
+    {
+	array_stream.addMore(event.inputBuffer.getChannelData(0));
+    }
     /*
     io.emit("shout",{
       left: event.inputBuffer.getChannelData(0),
@@ -127,10 +154,11 @@ function createAudioRecorderElement()
     else if(jQuery(this).text() == "Stop!")
     {
       processor.onaudioprocess = null;
+      array_stream.end();
       io.emit('end_shout',{});
       recorder.postMessage({
 	//command: 'getBuffer',
-        command: 'exportWAV',
+        command: 'exportRawWAV',
         type: 'audio/wav'
       });
       jQuery(this).text("Record!");
