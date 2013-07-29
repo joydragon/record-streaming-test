@@ -34,9 +34,10 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 
 var encoder = new lame.Encoder({
-  channels: 2,        // 2 channels (left and right)
-  bitDepth: 16,       // 16-bit samples
-  sampleRate: 44100   // 44,100 Hz sample rate
+  channels: 2,		// 2 channels (left and right)
+  bitDepth: 32,		// 32-bit samples
+  float: true,		// Receive floats?
+  //sampleRate: 44100	// 44,100 Hz sample rate
 });
 
 var server = http.createServer(app);
@@ -45,30 +46,6 @@ server.listen(app.get('port'));
 var io = require('socket.io').listen(server, function() {
 	console.log("Express server listening on port " + app.get('port'));
 });
-
-var my_streams;
-/*This should be on a separate file, but in the mean time :P*/
-function SimpleStream()
-{
-  var that = this;
-  this.in_data = Buffer();
-  
-  stream.Readable.call(that);
-  
-  that._read = function (size)
-  {
-    this.in_data.forEach(function(item){
-      that.push(item.buffer);
-    });
-    that.push(null);
-  }
-  
-  that.add = function(pcm_data){
-    this.in_data.write(pcm_data);
-  }
-  SimpleStream.prototype = Object.create(stream.Readable.prototype, { constructor: { value: SimpleStream }});
-}
-util.inherits(SimpleStream, stream.Readable);
 
 io.on('connection',function(socket)
 {
@@ -90,9 +67,10 @@ io.on('connection',function(socket)
 	});
 	
 	ss(socket).on("shout", function(stream, data){
-	  //console.log(stream);
+	  console.log(stream);
 	  //console.log(data);
-	  stream.pipe(encoder).pipe(process.stdout);
-	  //stream.pipe(process.stdout);
+	  //stream.pipe(encoder).pipe(process.stdout);
+	  var out_stream = fs.createWriteStream(path.resolve(__dirname, 'sample_pcm.mp3'));
+	  stream.pipe(out_stream).on('close', function(){console.log("DONE!!")});
 	});
 });
